@@ -1,0 +1,41 @@
+{
+    "appId": "com.jianjiban.app",
+    "productName": "简记办",
+    "artifactName": "简记办.exe",
+    "directories": {
+        "output": "dist"
+    },
+    "files": [
+        "dist/**/*",
+        "electron/**/*"
+    ],
+    "extraResources": [
+        {
+            "from": "data",
+            "to": "data",
+            "filter": [
+                "**/*"
+            ]
+        }
+    ],
+    "win": {
+        "target": [
+            {
+                "target": "portable",
+                "arch": [
+                    "x64"
+                ]
+            }
+        ],
+        "icon": "electron/assets/icon.ico"
+    },
+    "nsis": {
+        "oneClick": false,
+        "allowElevation": true,
+        "allowToChangeInstallationDirectory": true,
+        "createDesktopShortcut": true,
+        "createStartMenuShortcut": true,
+        "shortcutName": "简记办",
+        "perMachine": false
+    }
+}
