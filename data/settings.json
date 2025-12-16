@@ -1,0 +1,8 @@
+{
+    "shortcuts": {
+        "toggleWindow": "CommandOrControl+Alt+J",
+        "newTodo": "CommandOrControl+Alt+N"
+    },
+    "theme": "light",
+    "autoStart": false
+}

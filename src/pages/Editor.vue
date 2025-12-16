@@ -1,0 +1,484 @@
+<template>
+  <div class="editor-page">
+    <div class="drag-bar drag-region"></div>
+    <div class="window-controls no-drag">
+      <button class="btn-control" @click="handleCancel">✖</button>
+    </div>
+
+    <div class="editor-main">
+      <!-- Hidden Title Input (Auto-generated or Optional) -->
+      <el-input 
+        v-model="title" 
+        placeholder="标题 (可选)"
+        class="title-input"
+        clearable
+      />
+      
+      <RichEditor 
+        v-model="content"
+        @image-uploaded="handleImageUploaded"
+        class="rich-editor"
+      />
+
+      <!-- Reminder Settings -->
+      <div class="reminder-section" v-if="type === 'todo'">
+        <div class="reminder-header">
+          <div class="reminder-switch-row">
+            <label class="switch-label">
+              <el-icon><Bell /></el-icon>
+              设置提醒
+            </label>
+            <el-switch
+              v-model="isRemind"
+              active-color="#ffd04b"
+              inactive-color="rgba(255, 255, 255, 0.2)"
+            />
+          </div>
+        </div>
+        
+        <div class="reminder-body" v-if="isRemind">
+          <div class="reminder-row-combined">
+            <div class="reminder-item">
+              <label>提醒时间</label>
+              <el-date-picker
+                v-model="reminderDateTime"
+                type="datetime"
+                placeholder="选择日期时间"
+                :disabled-date="disabledDate"
+                format="YYYY-MM-DD HH:mm"
+                value-format="YYYY-MM-DDTHH:mm"
+                class="datetime-picker"
+                size="default"
+                :teleported="false"
+              />
+            </div>
+            <div class="reminder-item">
+              <label>重复</label>
+              <el-select 
+                v-model="repeatType" 
+                placeholder="请选择" 
+                class="repeat-select" 
+                size="default"
+                :teleported="false"
+                clearable
+              >
+                <el-option label="不重复" value="none" />
+                <el-option label="每天" value="daily" />
+                <el-option label="周一至周五" value="weekdays" />
+                <el-option label="每周" value="weekly" />
+                <el-option label="每月" value="monthly" />
+              </el-select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-actions">
+      <el-button 
+        class="btn-save" 
+        @click="handleSave"
+        type="primary"
+        size="large"
+      >
+        完成
+      </el-button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import { Bell } from '@element-plus/icons-vue';
+import RichEditor from '../components/RichEditor.vue';
+import moment from 'moment';
+
+defineOptions({
+  name: 'Editor'
+});
+
+const todoId = ref(null);
+const title = ref('');
+const content = ref('');
+const images = ref([]);
+const type = ref('note'); // 默认为笔记
+const reminderDateTime = ref('');
+const repeatType = ref('none');
+const isRemind = ref(false); // 是否开启提醒
+const isEdit = computed(() => !!todoId.value);
+
+const disabledDate = (time) => {
+  return moment(time).isBefore(moment(), 'day'); // Disable dates before today
+};
+
+const loadTodo = async (id) => {
+  try {
+    const todo = await window.api.getTodoById(id);
+    if (todo) {
+      title.value = todo.title;
+      content.value = todo.content;
+      images.value = todo.images || [];
+      type.value = todo.type || 'note';
+      
+      if (todo.remindAt) {
+        isRemind.value = true;
+        reminderDateTime.value = moment(todo.remindAt).format('YYYY-MM-DDTHH:mm');
+      } else {
+        isRemind.value = false;
+      }
+      
+      repeatType.value = todo.repeat || 'none';
+    }
+  } catch (error) {
+    // Load failed
+  }
+};
+
+const handleImageUploaded = (imagePath) => {
+  if (!images.value.includes(imagePath)) {
+    images.value.push(imagePath);
+  }
+};
+
+const triggerImageUpload = () => {
+  // Find the image upload button in Quill toolbar and click it
+  const imageBtn = document.querySelector('.ql-image');
+  if (imageBtn) imageBtn.click();
+};
+
+const handleSave = async () => {
+  // Auto-generate title if empty
+  let saveTitle = title.value.trim();
+  
+  if (!saveTitle) {
+    // Extract text from content
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content.value;
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+    saveTitle = text.slice(0, 20) || '未命名笔记';
+  }
+
+  // Construct remindAt
+  let remindAt = null;
+  if (isRemind.value && reminderDateTime.value) {
+    const selectedDate = moment(reminderDateTime.value);
+    const now = moment();
+    
+    if (selectedDate.isSameOrBefore(now)) {
+      ElMessage.warning('提醒时间必须晚于当前时间');
+      return;
+    }
+    
+    remindAt = selectedDate.toISOString();
+  }
+
+  // 确保所有数据都是可序列化的纯数据类型
+  const todoData = {
+    title: String(saveTitle),  // 确保是字符串
+    content: String(content.value || ''),  // 确保是字符串
+    images: Array.isArray(images.value) ? images.value.map(img => String(img)) : [],  // 确保是字符串数组
+    type: String(type.value),  // 添加类型
+    remindAt: remindAt,
+    repeat: String(repeatType.value),
+    updatedAt: new Date().toISOString()
+  };
+  
+  try {
+    if (isEdit.value) {
+      await window.api.updateTodo(todoId.value, todoData);
+      ElMessage.success('保存成功');
+    } else {
+      await window.api.createTodo(todoData);
+      ElMessage.success('创建成功');
+    }
+    setTimeout(() => {
+      window.api.closeEditor();
+    }, 500);
+  } catch (error) {
+    ElMessage.error('保存失败: ' + error.message);
+  }
+};
+
+const handleCancel = () => {
+  window.api.closeEditor();
+};
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+  const id = urlParams.get('id');
+  const urlType = urlParams.get('type');
+  
+  if (urlType) {
+    type.value = urlType;
+  }
+  
+  if (id) {
+    todoId.value = id;
+    loadTodo(id);
+  }
+  
+  // 监听来自主进程的 load-todo 事件
+  if (window.api && window.api.onLoadTodo) {
+    window.api.onLoadTodo((id, newType) => {
+      // 重置数据
+      title.value = '';
+      content.value = '';
+      images.value = [];
+      reminderDateTime.value = '';
+      isRemind.value = false;
+      repeatType.value = 'none';
+      
+      if (id) {
+        todoId.value = id;
+        loadTodo(id);
+      } else {
+        todoId.value = null;
+        if (newType) {
+            type.value = newType;
+        }
+      }
+    });
+  }
+});
+</script>
+
+<style scoped>
+.editor-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--bg-note);
+  color: white;
+  position: relative;
+}
+
+.drag-bar {
+  height: 30px;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 50;
+}
+
+.window-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 100;
+}
+
+.btn-control {
+  padding: 5px 10px;
+  font-size: 14px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.btn-control:hover {
+  opacity: 1;
+}
+
+.editor-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 30px; /* Space for controls */
+  overflow: hidden; /* Prevent double scrollbars */
+}
+
+.title-input {
+  padding: 10px 20px;
+  font-size: 18px;
+  font-weight: bold;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.title-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: normal;
+}
+
+.rich-editor {
+  flex: 1;
+  overflow: hidden; /* RichEditor handles its own scrolling */
+}
+
+.bottom-actions {
+  height: 50px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 20px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.btn-action {
+  background: transparent;
+  border-radius: 4px;
+  padding: 5px 15px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  transition: background 0.2s;
+  cursor: pointer;
+  color: white;
+}
+
+.btn-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-save {
+  background: var(--accent);
+  color: #000;
+  font-weight: bold;
+  border-radius: 20px;
+  padding: 5px 20px;
+}
+
+.btn-save:hover {
+  opacity: 0.9;
+  background: var(--accent);
+}
+
+.reminder-section {
+  padding: 0;
+  background: rgba(0, 0, 0, 0.25);
+  margin-top: auto;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.reminder-header {
+  padding: 12px 20px;
+}
+
+.reminder-switch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.reminder-body {
+  padding: 0 20px 16px 20px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reminder-row-combined {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.reminder-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reminder-item label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.datetime-picker,
+.repeat-select {
+color: #fff;
+  width: 100%;
+}
+
+/* Element Plus 组件深色主题美化 */
+/* :deep(.el-input__wrapper),
+:deep(.el-select__wrapper) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  padding: 4px 11px;
+}
+
+:deep(.el-input__wrapper:hover),
+:deep(.el-select__wrapper:hover) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+:deep(.el-input__wrapper.is-focus),
+:deep(.el-select__wrapper.is-focused) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) !important;
+}
+
+:deep(.el-input__inner) {
+  color: #fff !important;
+  font-weight: 500;
+} */
+
+/* 修复下拉选择框文字颜色 */
+/* :deep(.el-select .el-input__inner) {
+  color: #fff !important;
+}
+
+:deep(.el-select__wrapper .el-select__selected-item) {
+  color: #fff !important;
+} */
+
+/* 底部按钮区域 */
+.bottom-actions {
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #ffd04b 0%, #ffc107 100%);
+  border: none;
+  color: #333;
+  font-weight: 700;
+  padding: 10px 30px;
+  border-radius: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
+}
+
+.btn-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(255, 193, 7, 0.4);
+  background: linear-gradient(135deg, #ffd560 0%, #ffca2c 100%);
+}
+
+.btn-save:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 5px rgba(255, 193, 7, 0.2);
+}
+</style>

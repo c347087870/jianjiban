@@ -1,0 +1,88 @@
+:root {
+  --bg-dark: #1f1f1f;
+  --bg-card: #2d2d2d;
+  --bg-note: #624a75;
+  /* Purple note background */
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --accent: #ffd04b;
+  /* Yellow accent from icon */
+  --border: #3e3e3e;
+  --toolbar-bg: rgba(0, 0, 0, 0.2);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  /* App handles scrolling */
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  background: none;
+  border: none;
+  color: inherit;
+  outline: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Quill Editor Overrides */
+.ql-container {
+  font-family: inherit !important;
+  font-size: 16px !important;
+}
+
+.ql-editor {
+  padding: 20px !important;
+  line-height: 1.6;
+}
+
+.ql-editor.ql-blank::before {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-style: normal !important;
+}
+
+/* Window Drag Region */
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
