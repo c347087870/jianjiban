@@ -41,6 +41,7 @@
             <div class="reminder-item">
               <label>提醒时间</label>
               <el-date-picker
+                v-if="repeatType === 'none'"
                 v-model="reminderDateTime"
                 type="datetime"
                 placeholder="选择日期时间"
@@ -51,6 +52,67 @@
                 size="default"
                 :teleported="false"
               />
+              <el-time-picker
+                v-if="repeatType === 'daily' || repeatType === 'weekdays'"
+                v-model="reminderTime"
+                placeholder="选择时间"
+                format="HH:mm"
+                value-format="HH:mm"
+                class="time-picker"
+                size="default"
+                :teleported="false"
+              />
+              <div v-if="repeatType === 'weekly'" class="weekly-picker">
+                <el-select
+                  v-model="reminderWeekday"
+                  placeholder="选择周几"
+                  class="weekday-select"
+                  size="default"
+                  :teleported="false"
+                >
+                  <el-option label="周一" :value="1" />
+                  <el-option label="周二" :value="2" />
+                  <el-option label="周三" :value="3" />
+                  <el-option label="周四" :value="4" />
+                  <el-option label="周五" :value="5" />
+                  <el-option label="周六" :value="6" />
+                  <el-option label="周日" :value="0" />
+                </el-select>
+                <el-time-picker
+                  v-model="reminderTime"
+                  placeholder="选择时间"
+                  format="HH:mm"
+                  value-format="HH:mm"
+                  class="time-picker"
+                  size="default"
+                  :teleported="false"
+                />
+              </div>
+              <div v-if="repeatType === 'monthly'" class="monthly-picker">
+                <el-select
+                  v-model="reminderDay"
+                  placeholder="选择日期"
+                  class="day-select"
+                  size="default"
+                  :teleported="false"
+                >
+                  <el-option
+                    v-for="day in 31"
+                    :key="day"
+                    :label="day + '日'"
+                    :value="day"
+                  />
+                </el-select>
+                <el-time-picker
+                  v-model="reminderTime"
+                  placeholder="选择时间"
+                  format="HH:mm"
+                  value-format="HH:mm"
+                  class="time-picker"
+                  size="default"
+                  :teleported="false"
+                />
+              </div>
             </div>
             <div class="reminder-item">
               <label>重复</label>
@@ -99,18 +161,26 @@ defineOptions({
   name: 'Editor'
 });
 
-const todoId = ref(null);
-const title = ref('');
-const content = ref('');
-const images = ref([]);
-const type = ref('note'); // 默认为笔记
-const reminderDateTime = ref('');
-const repeatType = ref('none');
+const todoId = ref(null); // 待办事项ID
+const title = ref(''); // 标题
+const content = ref(''); // 内容
+const images = ref([]); // 图片列表
+const type = ref('note'); // 类型：note/todo
+const reminderDateTime = ref(''); // 提醒日期时间（一次性）
+const reminderTime = ref(''); // 提醒时间（重复提醒）
+const reminderWeekday = ref(1); // 提醒周几（1-7, 1=周一）
+const reminderDay = ref(1); // 提醒日期（1-31）
+const repeatType = ref('none'); // 重复类型：none/daily/weekdays/weekly/monthly
 const isRemind = ref(false); // 是否开启提醒
-const isEdit = computed(() => !!todoId.value);
+const isEdit = computed(() => !!todoId.value); // 是否为编辑模式
+
+// 计算背景色
+const editorBgColor = computed(() => {
+  return type.value === 'todo' ? '#624a75' : 'var(--bg-note)';
+});
 
 const disabledDate = (time) => {
-  return moment(time).isBefore(moment(), 'day'); // Disable dates before today
+  return moment(time).isBefore(moment(), 'day');
 };
 
 const loadTodo = async (id) => {
@@ -124,7 +194,19 @@ const loadTodo = async (id) => {
       
       if (todo.remindAt) {
         isRemind.value = true;
-        reminderDateTime.value = moment(todo.remindAt).format('YYYY-MM-DDTHH:mm');
+        const remindDate = moment(todo.remindAt);
+        
+        if (todo.repeat === 'none') {
+          reminderDateTime.value = remindDate.format('YYYY-MM-DDTHH:mm');
+        } else if (todo.repeat === 'daily' || todo.repeat === 'weekdays') {
+          reminderTime.value = remindDate.format('HH:mm');
+        } else if (todo.repeat === 'weekly') {
+          reminderWeekday.value = remindDate.day();
+          reminderTime.value = remindDate.format('HH:mm');
+        } else if (todo.repeat === 'monthly') {
+          reminderDay.value = remindDate.date();
+          reminderTime.value = remindDate.format('HH:mm');
+        }
       } else {
         isRemind.value = false;
       }
@@ -132,7 +214,7 @@ const loadTodo = async (id) => {
       repeatType.value = todo.repeat || 'none';
     }
   } catch (error) {
-    // Load failed
+    ElMessage.error('加载待办事项失败');
   }
 };
 
@@ -149,41 +231,125 @@ const triggerImageUpload = () => {
 };
 
 const handleSave = async () => {
-  // Auto-generate title if empty
   let saveTitle = title.value.trim();
   
   if (!saveTitle) {
-    // Extract text from content
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content.value;
     const text = tempDiv.textContent || tempDiv.innerText || '';
     saveTitle = text.slice(0, 20) || '未命名笔记';
   }
 
-  // Construct remindAt
   let remindAt = null;
-  if (isRemind.value && reminderDateTime.value) {
-    const selectedDate = moment(reminderDateTime.value);
+  if (isRemind.value) {
     const now = moment();
     
-    if (selectedDate.isSameOrBefore(now)) {
-      ElMessage.warning('提醒时间必须晚于当前时间');
-      return;
+    if (repeatType.value === 'none') {
+      if (!reminderDateTime.value) {
+        ElMessage.warning('请选择提醒时间');
+        return;
+      }
+      const selectedDate = moment(reminderDateTime.value);
+      
+      if (selectedDate.isSameOrBefore(now)) {
+        ElMessage.warning('提醒时间必须晚于当前时间');
+        return;
+      }
+      
+      remindAt = selectedDate.toISOString();
+    } else if (repeatType.value === 'daily') {
+      if (!reminderTime.value) {
+        ElMessage.warning('请选择提醒时间');
+        return;
+      }
+      const [hours, minutes] = reminderTime.value.split(':').map(Number);
+      const nextReminder = moment().hours(hours).minutes(minutes).seconds(0);
+
+      if (nextReminder.isSameOrBefore(now)) {
+        nextReminder.add(1, 'day');
+      }
+
+      // 使用与 weekdays 一致的格式
+      remindAt = nextReminder.format('YYYY-MM-DD') + 'T' + reminderTime.value + ':00';
+    } else if (repeatType.value === 'weekdays') {
+      if (!reminderTime.value) {
+        ElMessage.warning('请选择提醒时间');
+        return;
+      }
+      const [hours, minutes] = reminderTime.value.split(':').map(Number);
+      let nextReminder = moment().hours(hours).minutes(minutes).seconds(0);
+
+      if (nextReminder.isSameOrBefore(now)) {
+        nextReminder.add(1, 'day');
+      }
+
+      while (nextReminder.day() === 0 || nextReminder.day() === 6) {
+        nextReminder.add(1, 'day');
+      }
+
+      // 存储时间格式为 "YYYY-MM-DDTHH:mm:ss"，保留用户选择的时间
+      remindAt = nextReminder.format('YYYY-MM-DD') + 'T' + reminderTime.value + ':00';
+    } else if (repeatType.value === 'weekly') {
+      if (reminderWeekday.value === null || reminderWeekday.value === undefined || !reminderTime.value) {
+        ElMessage.warning('请选择提醒时间和周几');
+        return;
+      }
+      const [hours, minutes] = reminderTime.value.split(':').map(Number);
+      let nextReminder = moment().day(reminderWeekday.value).hours(hours).minutes(minutes).seconds(0);
+
+      if (nextReminder.isSameOrBefore(now)) {
+        nextReminder.add(1, 'week');
+      }
+
+      // 使用与 weekdays 一致的格式
+      remindAt = nextReminder.format('YYYY-MM-DD') + 'T' + reminderTime.value + ':00';
+    } else if (repeatType.value === 'monthly') {
+      if (reminderDay.value === null || reminderDay.value === undefined || !reminderTime.value) {
+        ElMessage.warning('请选择提醒时间和日期');
+        return;
+      }
+      const [hours, minutes] = reminderTime.value.split(':').map(Number);
+      let nextReminder = moment().date(reminderDay.value).hours(hours).minutes(minutes).seconds(0);
+      
+      if (nextReminder.isSameOrBefore(now)) {
+        nextReminder.add(1, 'month');
+      }
+      
+      if (nextReminder.date() !== reminderDay.value) {
+        nextReminder.date(nextReminder.daysInMonth());
+        if (nextReminder.isSameOrBefore(now)) {
+          nextReminder.add(1, 'month');
+          nextReminder.date(nextReminder.daysInMonth());
+        }
+      }
+
+      // 使用与 weekdays 一致的格式
+      remindAt = nextReminder.format('YYYY-MM-DD') + 'T' + reminderTime.value + ':00';
     }
-    
-    remindAt = selectedDate.toISOString();
   }
 
-  // 确保所有数据都是可序列化的纯数据类型
   const todoData = {
-    title: String(saveTitle),  // 确保是字符串
-    content: String(content.value || ''),  // 确保是字符串
-    images: Array.isArray(images.value) ? images.value.map(img => String(img)) : [],  // 确保是字符串数组
-    type: String(type.value),  // 添加类型
+    title: String(saveTitle),
+    content: String(content.value || ''),
+    images: Array.isArray(images.value) ? images.value.map(img => String(img)) : [],
+    type: String(type.value),
     remindAt: remindAt,
     repeat: String(repeatType.value),
     updatedAt: new Date().toISOString()
   };
+
+  if (isEdit.value) {
+    try {
+      const existingTodo = await window.api.getTodoById(todoId.value);
+      if (existingTodo) {
+        if (existingTodo.repeat !== repeatType.value || 
+            (existingTodo.remindAt && remindAt && existingTodo.remindAt !== remindAt)) {
+          todoData.lastRemindedAt = null;
+        }
+      }
+    } catch (error) {
+    }
+  }
   
   try {
     if (isEdit.value) {
@@ -227,9 +393,12 @@ onMounted(() => {
       content.value = '';
       images.value = [];
       reminderDateTime.value = '';
+      reminderTime.value = '';
+      reminderWeekday.value = 1;
+      reminderDay.value = 1;
       isRemind.value = false;
       repeatType.value = 'none';
-      
+
       if (id) {
         todoId.value = id;
         loadTodo(id);
@@ -249,7 +418,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: var(--bg-note);
+  background-color: v-bind(editorBgColor);
   color: white;
   position: relative;
 }
@@ -408,9 +577,28 @@ onMounted(() => {
 }
 
 .datetime-picker,
-.repeat-select {
-color: #fff;
+.repeat-select,
+.time-picker,
+.weekday-select,
+.day-select {
+  color: #fff;
   width: 100%;
+}
+
+.weekly-picker,
+.monthly-picker {
+  display: flex;
+  gap: 8px;
+}
+
+.weekday-select,
+.day-select {
+  flex: 1;
+  min-width: 80px;
+}
+
+.time-picker {
+  flex: 1;
 }
 
 /* Element Plus 组件深色主题美化 */

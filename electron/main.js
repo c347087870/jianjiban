@@ -15,13 +15,11 @@ let settingsWindow = null;
 let tray = null;
 let isQuitting = false;
 
-// 数据目录
 const DATA_DIR = path.join(app.getPath('userData'), 'data');
 const TODOS_FILE = path.join(DATA_DIR, 'todos.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 const IMAGES_DIR = path.join(DATA_DIR, 'images');
 
-// 默认设置
 const DEFAULT_SETTINGS = {
   shortcuts: {
     toggleWindow: 'CommandOrControl+Alt+J',
@@ -192,7 +190,7 @@ function createEditorWindow(todoId = null, type = 'note') {
     },
     frame: false, // Frameless
     backgroundColor: '#624a75',
-    title: todoId ? '编辑笔记' : '新笔记'
+    title: (type === 'todo' ? (todoId ? '编辑待办' : '新待办') : (todoId ? '编辑笔记' : '新笔记'))
   });
 
   // 构建 URL，包含 type 参数
@@ -373,30 +371,67 @@ function startReminderTimer() {
 
       for (const todo of todos) {
         if (!todo.completed && todo.remindAt) {
-          const remindTime = moment(todo.remindAt);
-          const lastReminded = todo.lastRemindedAt ? moment(todo.lastRemindedAt) : null;
+          // 处理工作日重复提醒
+          if (todo.repeat === 'weekdays') {
+            // 检查今天是否是工作日
+            const currentDay = now.day(); // 0=周日, 1=周一, ..., 6=周六
+            if (currentDay >= 1 && currentDay <= 5) { // 周一到周五
+              // 从 remindAt 中提取时间部分（格式：YYYY-MM-DDTHH:mm:ss）
+              const remindTime = moment(todo.remindAt);
+              const remindHour = remindTime.hour();
+              const remindMinute = remindTime.minute();
 
-          // Check if due AND (never reminded OR reminded before this due time)
-          if (remindTime.isSameOrBefore(now) && (!lastReminded || lastReminded.isBefore(remindTime))) {
-            showReminder(todo);
-            todo.lastRemindedAt = now.toISOString();
-            hasUpdates = true;
+              // 构造今天的提醒时间
+              const todayRemindTime = moment().hour(remindHour).minute(remindMinute).second(0);
+
+              // 检查是否到了提醒时间
+              const lastReminded = todo.lastRemindedAt ? moment(todo.lastRemindedAt) : null;
+
+              if (now.isSameOrAfter(todayRemindTime) &&
+                  (!lastReminded || lastReminded.isBefore(todayRemindTime, 'day'))) {
+                showReminder(todo);
+                todo.lastRemindedAt = now.toISOString();
+                hasUpdates = true;
+              }
+            } else {
+              // 周末时，检查是否需要更新 lastRemindedAt，避免周一重复提醒
+              const remindTime = moment(todo.remindAt);
+              const remindHour = remindTime.hour();
+              const remindMinute = remindTime.minute();
+              const todayRemindTime = moment().hour(remindHour).minute(remindMinute).second(0);
+
+              // 如果今天是周末且已经过了提醒时间，更新 lastRemindedAt 为今天
+              const lastReminded = todo.lastRemindedAt ? moment(todo.lastRemindedAt) : null;
+              if (now.isSameOrAfter(todayRemindTime) &&
+                  (!lastReminded || lastReminded.isBefore(todayRemindTime, 'day'))) {
+                todo.lastRemindedAt = now.toISOString();
+                hasUpdates = true;
+              }
+            }
+          } else {
+            // 原有的非重复或其它重复类型的提醒逻辑
+            const remindTime = moment(todo.remindAt);
+            const lastReminded = todo.lastRemindedAt ? moment(todo.lastRemindedAt) : null;
+
+            if (remindTime.isSameOrBefore(now) && (!lastReminded || lastReminded.isBefore(remindTime))) {
+              showReminder(todo);
+              todo.lastRemindedAt = now.toISOString();
+              hasUpdates = true;
+            }
           }
         }
       }
 
       if (hasUpdates) {
         await fs.writeFile(TODOS_FILE, JSON.stringify(todos, null, 2));
-        // Notify windows
         const { BrowserWindow } = require('electron');
         BrowserWindow.getAllWindows().forEach(win => {
           win.webContents.send('todo:changed', todos);
         });
       }
     } catch (error) {
-      // Check reminders failed
     }
-  }, 10000); // Check every 10 seconds
+  }, 10000);
 }
 
 // 显示提醒通知

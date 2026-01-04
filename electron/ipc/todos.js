@@ -1,11 +1,8 @@
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
+const moment = require('moment');
 
-/**
- * 注册待办相关的 IPC 处理器
- */
 function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
-    // 读取所有待办
     ipcMain.handle('todo:getAll', async () => {
         try {
             const data = await fs.readFile(todosFilePath, 'utf-8');
@@ -15,7 +12,6 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
         }
     });
 
-    // 根据 ID 获取待办
     ipcMain.handle('todo:getById', async (event, id) => {
         try {
             const data = await fs.readFile(todosFilePath, 'utf-8');
@@ -26,7 +22,6 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
         }
     });
 
-    // 创建待办
     ipcMain.handle('todo:create', async (event, todoData) => {
         try {
             const data = await fs.readFile(todosFilePath, 'utf-8');
@@ -37,8 +32,9 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
                 title: todoData.title || '无标题',
                 content: todoData.content || '',
                 images: todoData.images || [],
-                type: todoData.type || 'note',  // 添加类型字段，默认为笔记
+                type: todoData.type || 'note',
                 remindAt: todoData.remindAt || null,
+                repeat: todoData.repeat || 'none',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 completed: false
@@ -47,7 +43,6 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
             todos.push(newTodo);
             await fs.writeFile(todosFilePath, JSON.stringify(todos, null, 2));
 
-            // 通知所有窗口待办列表已更新
             const { BrowserWindow } = require('electron');
             BrowserWindow.getAllWindows().forEach(win => {
                 win.webContents.send('todo:changed', todos);
@@ -59,7 +54,6 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
         }
     });
 
-    // 更新待办
     ipcMain.handle('todo:update', async (event, id, updateData) => {
         try {
             const data = await fs.readFile(todosFilePath, 'utf-8');
@@ -78,7 +72,6 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
 
             await fs.writeFile(todosFilePath, JSON.stringify(todos, null, 2));
 
-            // 通知所有窗口
             const { BrowserWindow } = require('electron');
             BrowserWindow.getAllWindows().forEach(win => {
                 win.webContents.send('todo:changed', todos);
@@ -90,7 +83,6 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
         }
     });
 
-    // 删除待办
     ipcMain.handle('todo:delete', async (event, id) => {
         try {
             const data = await fs.readFile(todosFilePath, 'utf-8');
@@ -105,7 +97,6 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
 
             await fs.writeFile(todosFilePath, JSON.stringify(todos, null, 2));
 
-            // 通知所有窗口
             const { BrowserWindow } = require('electron');
             BrowserWindow.getAllWindows().forEach(win => {
                 win.webContents.send('todo:changed', todos);
@@ -117,7 +108,6 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
         }
     });
 
-    // 完成待办
     ipcMain.handle('todo:complete', async (event, id) => {
         try {
             const data = await fs.readFile(todosFilePath, 'utf-8');
@@ -133,7 +123,6 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
 
             await fs.writeFile(todosFilePath, JSON.stringify(todos, null, 2));
 
-            // 通知所有窗口
             const { BrowserWindow } = require('electron');
             BrowserWindow.getAllWindows().forEach(win => {
                 win.webContents.send('todo:changed', todos);
@@ -144,7 +133,7 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
             throw error;
         }
     });
-    // 停止提醒
+    
     ipcMain.handle('todo:stopReminder', async (event, id) => {
         try {
             const data = await fs.readFile(todosFilePath, 'utf-8');
@@ -157,16 +146,15 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
 
             const todo = todos[index];
 
-            // 如果是重复任务，计算下一次提醒时间
             if (todo.repeat && todo.repeat !== 'none') {
-                const currentRemindAt = new Date(todo.remindAt);
-                // Ensure we advance from the *current* reminder time, not just "now", to maintain schedule
-                // But if it's way in the past, maybe we should advance to future? 
-                // For simplicity and consistency with "stop reminder" meaning "I'm done with this instance",
-                // let's advance from the current reminder time.
-                todo.remindAt = calculateNextReminder(currentRemindAt, todo.repeat);
+                if (todo.repeat === 'weekdays') {
+                    const now = new Date();
+                    todo.lastRemindedAt = now.toISOString();
+                } else {
+                    const currentRemindAt = new Date(todo.remindAt);
+                    todo.remindAt = calculateNextReminder(currentRemindAt, todo.repeat);
+                }
             } else {
-                // 非重复任务，清除提醒
                 todo.remindAt = null;
             }
 
@@ -174,13 +162,11 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
 
             await fs.writeFile(todosFilePath, JSON.stringify(todos, null, 2));
 
-            // 通知所有窗口
             const { BrowserWindow } = require('electron');
             BrowserWindow.getAllWindows().forEach(win => {
                 win.webContents.send('todo:changed', todos);
             });
 
-            // 停止托盘闪烁
             if (onStopReminder) {
                 onStopReminder();
             }
@@ -192,24 +178,27 @@ function registerTodoHandlers(ipcMain, todosFilePath, onStopReminder) {
     });
 }
 
-// 计算下一次提醒时间
 function calculateNextReminder(currentDate, repeatType) {
-    const date = new Date(currentDate);
+    const date = moment(currentDate);
+    const targetDay = date.date();
 
     switch (repeatType) {
         case 'daily':
-            date.setDate(date.getDate() + 1);
+            date.add(1, 'day');
             break;
         case 'weekly':
-            date.setDate(date.getDate() + 7);
+            date.add(1, 'week');
             break;
         case 'monthly':
-            date.setMonth(date.getMonth() + 1);
+            date.add(1, 'month');
+            if (date.date() !== targetDay) {
+                date.date(date.daysInMonth());
+            }
             break;
         case 'weekdays':
             do {
-                date.setDate(date.getDate() + 1);
-            } while (date.getDay() === 0 || date.getDay() === 6); // Skip Sunday (0) and Saturday (6)
+                date.add(1, 'day');
+            } while (date.day() === 0 || date.day() === 6);
             break;
     }
 
