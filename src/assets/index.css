@@ -1,14 +1,56 @@
 :root {
-  --bg-dark: #1f1f1f;
-  --bg-card: #2d2d2d;
-  --bg-note: #624a75;
-  /* Purple note background */
-  --text-primary: #ffffff;
-  --text-secondary: #b3b3b3;
-  --accent: #ffd04b;
-  /* Yellow accent from icon */
-  --border: #3e3e3e;
-  --toolbar-bg: rgba(0, 0, 0, 0.2);
+  /* 小米风格配色系统 - 简洁现代 */
+  --bg-page: #F5F5F5;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FAFAFA;
+  --bg-input: #F9F9F9;
+  --bg-header: #FFFFFF;
+  --bg-dark: #F8F9FA;
+
+  /* 小米橙色强调色 */
+  --mi-orange: #FF6900;
+  --mi-orange-hover: #FF7200;
+  --mi-orange-light: rgba(255, 105, 0, 0.1);
+  --mi-orange-dark: #E65E00;
+
+  /* 辅助色 */
+  --mi-blue: #2E7DFF;
+  --mi-green: #00B894;
+  --mi-red: #FF4757;
+  --mi-yellow: #FFB900;
+
+  /* 文字颜色 - 清晰优雅 */
+  --text-primary: #1A1A1A;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --text-white: #FFFFFF;
+  --text-dim: #8E8E93;
+
+  /* 边框和阴影 */
+  --border-light: #E5E5E5;
+  --border-medium: #D8D8D8;
+  --border-main: #E8E8E8;
+  --border-highlight: #FF6900;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-card: 12px;
+
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-xxl: 24px;
+  --spacing-xxxl: 32px;
 }
 
 * {
@@ -18,12 +60,42 @@
 }
 
 body {
-  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  background-color: var(--bg-dark);
+  /* 小米字体 - 优先使用系统字体 */
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  background-color: var(--bg-page);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
-  /* App handles scrolling */
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Element Plus 主题覆盖 - 小米风格 */
+:root {
+  --el-color-primary: #FF6900;
+  --el-color-primary-hover: #FF7200;
+  --el-color-primary-active: #E65E00;
+  --el-color-primary-light-3: rgba(255, 105, 0, 0.2);
+  --el-color-primary-light-5: rgba(255, 105, 0, 0.1);
+  --el-color-primary-light-7: rgba(255, 105, 0, 0.05);
+  --el-color-primary-light-8: rgba(255, 105, 0, 0.03);
+  --el-color-primary-light-9: rgba(255, 105, 0, 0.02);
+
+  --el-bg-page: #F5F5F5;
+  --el-bg-container: #FFFFFF;
+  --el-bg-overlay: rgba(0, 0, 0, 0.5);
+
+  --el-text-primary: #1A1A1A;
+  --el-text-secondary: #666666;
+  --el-text-placeholder: #999999;
+
+  --el-border-color: #E8E8E8;
+  --el-border-color-light: #F0F0F0;
+  --el-border-color-lighter: #F5F5F5;
+  --el-border-color-extra-light: #FAFAFA;
+
+  --el-fill-color-blank: #FFFFFF;
 }
 
 button {
@@ -43,10 +115,10 @@ textarea {
   outline: none;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - 小米风格 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -54,28 +126,54 @@ textarea {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  background: #D8D8D8;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #FF6900;
 }
 
-/* Quill Editor Overrides */
+/* 选择文本样式 */
+::selection {
+  background: rgba(255, 105, 0, 0.2);
+  color: var(--text-primary);
+}
+
+/* Quill Editor Overrides - 小米风格 */
 .ql-container {
-  font-family: inherit !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
   font-size: 16px !important;
+  font-weight: 400 !important;
+  border: 1px solid var(--border-main) !important;
+  background: var(--bg-card) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.ql-container:hover {
+  border-color: var(--mi-orange) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
 .ql-editor {
   padding: 20px !important;
   line-height: 1.6;
+  color: var(--text-primary) !important;
+  background: transparent !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+}
+
+.ql-editor:focus {
+  border-color: var(--mi-orange) !important;
+  box-shadow: 0 0 0 2px rgba(255, 105, 0, 0.1) !important;
 }
 
 .ql-editor.ql-blank::before {
-  color: rgba(255, 255, 255, 0.5) !important;
+  color: var(--text-tertiary) !important;
   font-style: normal !important;
+  opacity: 0.8;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* Window Drag Region */
@@ -85,4 +183,265 @@ textarea {
 
 .no-drag {
   -webkit-app-region: no-drag;
+}
+
+/* Element Plus 组件全局覆盖 - 小米风格 */
+.el-button {
+  border-radius: var(--radius-md) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.el-button--primary {
+  background: var(--mi-orange) !important;
+  border-color: var(--mi-orange) !important;
+  color: #FFFFFF !important;
+  font-weight: 500 !important;
+}
+
+.el-button--primary:hover {
+  background: var(--mi-orange-hover) !important;
+  border-color: var(--mi-orange-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 105, 0, 0.3);
+}
+
+.el-button--primary:active {
+  transform: translateY(0);
+  background: var(--mi-orange-dark) !important;
+}
+
+.el-button--success {
+  background: #00B894 !important;
+  border-color: #00B894 !important;
+  color: #FFFFFF !important;
+}
+
+.el-button--success:hover {
+  background: #00A885 !important;
+  border-color: #00A885 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+}
+
+.el-button--danger {
+  background: #FF4757 !important;
+  border-color: #FF4757 !important;
+  color: #FFFFFF !important;
+}
+
+.el-button--danger:hover {
+  background: #FF6B7A !important;
+  border-color: #FF6B7A !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+}
+
+.el-button--warning {
+  background: #FFB900 !important;
+  border-color: #FFB900 !important;
+  color: #FFFFFF !important;
+}
+
+.el-button--warning:hover {
+  background: #FFC107 !important;
+  border-color: #FFC107 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 185, 0, 0.3);
+}
+
+.el-button--default {
+  background: #FFFFFF !important;
+  border: 1px solid var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+
+.el-button--default:hover {
+  background: #FAFAFA !important;
+  border-color: var(--mi-orange) !important;
+  color: var(--mi-orange) !important;
+  transform: translateY(-1px);
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-date-editor {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-main) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+  color: var(--text-primary) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+  font-weight: 400 !important;
+  transition: all 0.2s ease !important;
+}
+
+.el-input__wrapper:hover,
+.el-select__wrapper:hover,
+.el-date-editor:hover {
+  border-color: var(--mi-orange) !important;
+  box-shadow: 0 2px 8px rgba(255, 105, 0, 0.1) !important;
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-date-editor.is-focus {
+  border-color: var(--mi-orange) !important;
+  box-shadow: 0 0 0 2px rgba(255, 105, 0, 0.15) !important;
+}
+
+.el-input__inner,
+.el-select__selected-item {
+  color: var(--text-primary) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+}
+
+.el-checkbox__inner {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-main) !important;
+  border-radius: 4px !important;
+}
+
+.el-checkbox__inner:hover {
+  border-color: var(--mi-orange) !important;
+}
+
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background: var(--mi-orange) !important;
+  border-color: var(--mi-orange) !important;
+}
+
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: var(--mi-orange) !important;
+  font-weight: 500 !important;
+}
+
+.el-switch__core {
+  background: #E8E8E8 !important;
+  border: none !important;
+  border-radius: 12px !important;
+}
+
+.el-switch.is-checked .el-switch__core {
+  background: var(--mi-orange) !important;
+}
+
+.el-divider {
+  border-color: var(--border-main) !important;
+  border-style: dashed !important;
+  margin: 20px 0 !important;
+}
+
+.el-message-box {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-main) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+  padding: 20px !important;
+}
+
+.el-message-box__title {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+.el-message-box__content {
+  color: var(--text-secondary) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+  font-size: 14px !important;
+}
+
+.el-message-box__btns {
+  margin-top: 16px !important;
+}
+
+.el-message {
+  border-radius: var(--radius-md) !important;
+  border: none !important;
+  background: var(--bg-card) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+  font-weight: 500 !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: 12px 16px !important;
+}
+
+.el-message--success {
+  border-left: 4px solid var(--mi-green) !important;
+  color: var(--text-primary) !important;
+}
+
+.el-message--warning {
+  border-left: 4px solid var(--mi-yellow) !important;
+  color: var(--text-primary) !important;
+}
+
+.el-message--error {
+  border-left: 4px solid var(--mi-red) !important;
+  color: var(--text-primary) !important;
+}
+
+.el-select-dropdown__item:hover {
+  background: rgba(255, 105, 0, 0.05) !important;
+  color: var(--mi-orange) !important;
+}
+
+.el-select-dropdown__item.selected {
+  color: var(--mi-orange) !important;
+  background: rgba(255, 105, 0, 0.1) !important;
+  font-weight: 500 !important;
+}
+
+.el-picker-panel {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-main) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+}
+
+.el-picker-panel__body-wrapper,
+.el-date-picker__header,
+.el-time-panel {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+}
+
+.el-picker-panel__cell,
+.el-time-panel__cell {
+  color: var(--text-primary) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+  border-radius: 6px !important;
+}
+
+.el-picker-panel__cell:hover,
+.el-time-panel__cell:hover {
+  background: rgba(255, 105, 0, 0.1) !important;
+  color: var(--mi-orange) !important;
+}
+
+.el-picker-panel__cell.in-range {
+  background: rgba(255, 105, 0, 0.15) !important;
+}
+
+.el-picker-panel__cell.in-range:hover {
+  background: rgba(255, 105, 0, 0.2) !important;
+}
+
+.el-picker-panel__cell.is-selected {
+  background: var(--mi-orange) !important;
+  color: #FFFFFF !important;
+  font-weight: 500 !important;
+}
+
+.el-time-panel__btn.confirm {
+  color: var(--mi-orange) !important;
+  font-weight: 600 !important;
+}
+
+.el-time-panel__btn.cancel {
+  color: var(--text-tertiary) !important;
 }

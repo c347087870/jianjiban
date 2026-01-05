@@ -259,13 +259,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Global & Layout */
+/* Home Page - 小米风格 */
 .home-page {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #1e1e1e;
-  color: #e0e0e0;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
   position: relative;
   overflow: hidden;
 }
@@ -274,8 +274,11 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 20px 10px 20px;
+  padding: 16px 20px;
   flex-shrink: 0;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-main);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
 .logo-area {
@@ -285,88 +288,140 @@ onUnmounted(() => {
 }
 
 .logo-icon {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 h1 {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
 .window-controls {
   display: flex;
-  gap: 8px;
+  gap: 0;
 }
 
 .window-controls button {
-  background: none;
+  background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 14px;
-  padding: 4px;
-  transition: color 0.2s;
+  font-size: 16px;
+  padding: 6px 10px;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  font-family: inherit;
+  font-weight: 500;
+  width: 36px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px;
 }
 
 .window-controls button:hover {
-  color: #fff;
+  background: rgba(255, 105, 0, 0.1);
+  color: var(--mi-orange);
 }
 
-.home-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px 20px 80px 20px;
-  /* Bottom padding for tabs */
-}
-
-/* Search & Actions */
-.search-bar {
-  margin-bottom: 16px;
-}
-
-:deep(.search-input .el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: none;
-  border-radius: 12px;
-  padding: 4px 12px;
-}
-
-:deep(.search-input .el-input__wrapper.is-focus) {
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 0 0 1px var(--el-color-primary);
-}
-
-:deep(.search-input .el-input__inner) {
-  color: #fff;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.btn-add {
-  flex: 1;
-  height: 44px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 15px;
-  border: none;
+.window-controls .btn-icon {
+  margin: 2px;
+  font-size: 16px;
+  width: 36px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.home-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 88px 20px;
+  background: var(--bg-page);
+}
+
+/* Search & Actions - 小米风格 */
+.search-bar {
+  margin-bottom: 16px;
+}
+
+:deep(.search-input .el-input__wrapper) {
+  background: var(--bg-card);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  box-shadow: var(--shadow-sm);
+}
+
+:deep(.search-input .el-input__wrapper:hover) {
+  border-color: var(--mi-orange);
+  box-shadow: var(--shadow-md);
+}
+
+:deep(.search-input .el-input__wrapper.is-focus) {
+  border-color: var(--mi-orange);
+  box-shadow: 0 0 0 3px rgba(255, 105, 0, 0.15);
+}
+
+:deep(.search-input .el-input__inner) {
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.btn-add {
+  flex: 1;
+  height: 48px;
+  border-radius: var(--radius-lg) !important;
+  font-weight: 500;
+  font-size: 15px;
+  border: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mi-orange) !important;
+  color: #FFFFFF !important;
+  transition: all 0.2s ease !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.btn-add:hover {
+  background: var(--mi-orange-hover) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md) !important;
+}
+
+.btn-add[type="success"] {
+  background: #00B894 !important;
+}
+
+.btn-add[type="success"]:hover {
+  background: #00A885 !important;
+}
+
 .btn-icon {
   margin-right: 6px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: bold;
 }
 
-/* Lists */
+/* Lists - 小米风格 */
 .todo-list,
 .note-list {
   display: flex;
@@ -376,20 +431,22 @@ h1 {
 
 .todo-item,
 .note-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   padding: 16px;
   position: relative;
   transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-main);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  box-shadow: var(--shadow-sm);
 }
 
 .todo-item:hover,
 .note-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-card-hover);
+  border-color: var(--mi-orange);
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .todo-main,
@@ -403,23 +460,23 @@ h1 {
 .note-content {
   flex: 1;
   min-width: 0;
-  padding-right: 60px;
-  /* Space for actions */
+  padding-right: 70px;
 }
 
 .todo-title,
 .note-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  color: #fff;
-  margin-bottom: 4px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
   line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
 .todo-preview,
 .note-preview {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  color: var(--text-secondary);
   margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -427,6 +484,7 @@ h1 {
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
 .todo-meta,
@@ -434,8 +492,9 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
 .meta-time {
@@ -445,19 +504,23 @@ h1 {
 }
 
 .todo-due {
-  color: #ff6b6b;
-  font-weight: 600;
+  color: var(--mi-red);
+  font-weight: 500;
 }
 
 .todo-item.completed {
-  opacity: 0.5;
+  opacity: 0.6;
+  background: #FAFAFA;
+  border-color: #E8E8E8;
 }
 
 .todo-item.completed .todo-title {
   text-decoration: line-through;
+  color: var(--text-tertiary);
+  font-weight: 400;
 }
 
-/* Actions */
+/* Actions - 小米风格 */
 .todo-actions,
 .note-actions {
   position: absolute;
@@ -466,7 +529,7 @@ h1 {
   display: flex;
   gap: 8px;
   opacity: 0;
-  transform: translateX(10px);
+  transform: translateX(8px);
   transition: all 0.2s ease;
 }
 
@@ -476,18 +539,62 @@ h1 {
   transform: translateX(0);
 }
 
-/* Bottom Tabs */
+.btn-delete {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-main) !important;
+  color: var(--mi-red) !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 500 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.btn-delete:hover {
+  background: var(--mi-red) !important;
+  color: #FFFFFF !important;
+  border-color: var(--mi-red) !important;
+  transform: scale(1.05) !important;
+}
+
+.btn-stop-reminder {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-main) !important;
+  color: var(--mi-orange) !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 500 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.btn-stop-reminder:hover {
+  background: var(--mi-orange) !important;
+  color: #FFFFFF !important;
+  border-color: var(--mi-orange) !important;
+  transform: scale(1.05) !important;
+}
+
+/* Bottom Tabs - 小米风格 */
 .bottom-tabs {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 60px;
-  background: rgba(30, 30, 30, 0.95);
-  backdrop-filter: blur(10px);
+  height: 56px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-main);
   display: flex;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 10;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
 .tab-item {
@@ -496,39 +603,45 @@ h1 {
   justify-content: center;
   align-items: center;
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   font-weight: 500;
+  position: relative;
+}
+
+.tab-item:last-child {
+  border-right: none;
 }
 
 .tab-item:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--mi-orange);
+  background: rgba(255, 105, 0, 0.05);
 }
 
 .tab-item.active {
-  color: var(--el-color-primary);
+  color: var(--mi-orange);
+  background: rgba(255, 105, 0, 0.08);
   font-weight: 600;
-  position: relative;
 }
 
 .tab-item.active::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 3px;
-  background: var(--el-color-primary);
-  border-radius: 0 0 3px 3px;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--mi-orange);
 }
 
 .empty-state {
-  padding: 40px 0;
+  padding: 60px 0;
   text-align: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-tertiary);
   font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
 }
 </style>

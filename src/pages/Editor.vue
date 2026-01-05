@@ -2,7 +2,7 @@
   <div class="editor-page">
     <div class="drag-bar drag-region"></div>
     <div class="window-controls no-drag">
-      <button class="btn-control" @click="handleCancel">✖</button>
+      <button @click="handleCancel">✕</button>
     </div>
 
     <div class="editor-main">
@@ -30,8 +30,8 @@
             </label>
             <el-switch
               v-model="isRemind"
-              active-color="#ffd04b"
-              inactive-color="rgba(255, 255, 255, 0.2)"
+              active-color="#00ff41"
+              inactive-color="#333"
             />
           </div>
         </div>
@@ -174,9 +174,9 @@ const repeatType = ref('none'); // 重复类型：none/daily/weekdays/weekly/mon
 const isRemind = ref(false); // 是否开启提醒
 const isEdit = computed(() => !!todoId.value); // 是否为编辑模式
 
-// 计算背景色
+// 计算背景色 - 小米风格
 const editorBgColor = computed(() => {
-  return type.value === 'todo' ? '#624a75' : 'var(--bg-note)';
+  return type.value === 'todo' ? 'linear-gradient(135deg, rgba(255, 105, 0, 0.03) 0%, rgba(255, 185, 0, 0.03) 100%)' : 'linear-gradient(135deg, rgba(46, 125, 255, 0.03) 0%, rgba(0, 184, 148, 0.03) 100%)';
 });
 
 const disabledDate = (time) => {
@@ -414,120 +414,178 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Editor Page - 小米风格 */
 .editor-page {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: v-bind(editorBgColor);
-  color: white;
+  background: var(--bg-page);
+  color: var(--text-primary);
   position: relative;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
 .drag-bar {
-  height: 30px;
+  height: 32px;
   width: 100%;
   position: absolute;
   top: 0;
   left: 0;
   z-index: 50;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-main);
 }
 
 .window-controls {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 0;
+  right: 0;
   z-index: 100;
+  display: flex;
+  gap: 0;
+  height: 32px;
+  align-items: center;
+  padding: 0 4px;
 }
 
-.btn-control {
-  padding: 5px 10px;
-  font-size: 14px;
-  opacity: 0.6;
-  transition: opacity 0.2s;
+.window-controls button {
+  padding: 6px 10px;
+  font-size: 16px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 28px;
+  margin: 2px;
 }
 
-.btn-control:hover {
-  opacity: 1;
+.window-controls button:hover {
+  color: var(--mi-orange);
+  background: rgba(255, 105, 0, 0.1);
 }
 
 .editor-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-top: 30px; /* Space for controls */
-  overflow: hidden; /* Prevent double scrollbars */
+  padding-top: 32px;
+  overflow: hidden;
+  background: var(--bg-page);
 }
 
 .title-input {
-  padding: 10px 20px;
-  font-size: 18px;
-  font-weight: bold;
-  opacity: 0.8;
+  padding: 16px 20px;
+  font-size: 20px;
+  font-weight: 600;
   flex-shrink: 0;
+  background: var(--bg-card) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-main) !important;
+  color: var(--text-primary) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  border-radius: 0 !important;
 }
 
 .title-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-  font-weight: normal;
+  color: var(--text-tertiary);
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.title-input:focus {
+  background: var(--bg-card) !important;
+  border-bottom-color: var(--mi-orange) !important;
+  box-shadow: 0 2px 8px rgba(255, 105, 0, 0.1) !important;
 }
 
 .rich-editor {
   flex: 1;
-  overflow: hidden; /* RichEditor handles its own scrolling */
+  overflow: hidden;
+  padding: 16px 20px;
 }
 
 .bottom-actions {
-  height: 50px;
+  height: 56px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
   padding: 0 20px;
   flex-shrink: 0;
   z-index: 100;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-main);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  gap: 12px;
 }
 
 .btn-action {
-  background: transparent;
-  border-radius: 4px;
-  padding: 5px 15px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 14px;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
   cursor: pointer;
-  color: white;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .btn-action:hover {
-  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--mi-orange);
+  color: var(--mi-orange);
+  background: rgba(255, 105, 0, 0.05);
+  transform: translateY(-1px);
 }
 
 .btn-save {
-  background: var(--accent);
-  color: #000;
-  font-weight: bold;
-  border-radius: 20px;
-  padding: 5px 20px;
+  background: var(--mi-orange);
+  border: 1px solid var(--mi-orange);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: var(--radius-lg);
+  padding: 10px 32px;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-save:hover {
-  opacity: 0.9;
-  background: var(--accent);
+  background: var(--mi-orange-hover);
+  border-color: var(--mi-orange-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-save:active {
+  transform: translateY(0);
 }
 
 .reminder-section {
   padding: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--bg-card);
   margin-top: auto;
   flex-shrink: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  border-top: 1px solid var(--border-main);
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
 .reminder-header {
-  padding: 12px 20px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-main);
 }
 
 .reminder-switch-row {
@@ -541,23 +599,23 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .reminder-body {
   padding: 0 20px 16px 20px;
-  animation: slideDown 0.3s ease;
+  animation: slideDown 0.2s ease;
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
+  from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .reminder-row-combined {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: flex-end;
 }
 
@@ -571,9 +629,8 @@ onMounted(() => {
 
 .reminder-item label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  font-weight: 500;
 }
 
 .datetime-picker,
@@ -581,7 +638,6 @@ onMounted(() => {
 .time-picker,
 .weekday-select,
 .day-select {
-  color: #fff;
   width: 100%;
 }
 
@@ -599,74 +655,5 @@ onMounted(() => {
 
 .time-picker {
   flex: 1;
-}
-
-/* Element Plus 组件深色主题美化 */
-/* :deep(.el-input__wrapper),
-:deep(.el-select__wrapper) {
-  background: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: none !important;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  padding: 4px 11px;
-}
-
-:deep(.el-input__wrapper:hover),
-:deep(.el-select__wrapper:hover) {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-:deep(.el-input__wrapper.is-focus),
-:deep(.el-select__wrapper.is-focused) {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent) !important;
-}
-
-:deep(.el-input__inner) {
-  color: #fff !important;
-  font-weight: 500;
-} */
-
-/* 修复下拉选择框文字颜色 */
-/* :deep(.el-select .el-input__inner) {
-  color: #fff !important;
-}
-
-:deep(.el-select__wrapper .el-select__selected-item) {
-  color: #fff !important;
-} */
-
-/* 底部按钮区域 */
-.bottom-actions {
-  padding: 16px 20px;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.btn-save {
-  background: linear-gradient(135deg, #ffd04b 0%, #ffc107 100%);
-  border: none;
-  color: #333;
-  font-weight: 700;
-  padding: 10px 30px;
-  border-radius: 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
-}
-
-.btn-save:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 193, 7, 0.4);
-  background: linear-gradient(135deg, #ffd560 0%, #ffca2c 100%);
-}
-
-.btn-save:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 5px rgba(255, 193, 7, 0.2);
 }
 </style>

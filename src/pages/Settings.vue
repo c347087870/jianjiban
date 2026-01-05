@@ -170,47 +170,61 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Settings Page - 小米风格 */
 .settings-page {
   height: 100vh;
-  background-color: #1e1e1e; /* 更深的背景色 */
+  background-color: var(--bg-page);
   padding: 20px;
-  color: #e0e0e0;
+  color: var(--text-primary);
   box-sizing: border-box;
   overflow-y: auto;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
 .settings-content {
   max-width: 100%;
   margin: 0 auto;
+  position: relative;
+  padding-top: 16px;
 }
 
 h1 {
-  font-size: 20px;
-  margin-bottom: 20px;
-  color: #fff;
+  font-size: 24px;
+  margin-bottom: 24px;
+  color: var(--text-primary);
   font-weight: 600;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px;
+  border-bottom: 2px solid var(--mi-orange);
+  padding-bottom: 12px;
+  letter-spacing: 0.5px;
 }
 
 .settings-group {
-  margin-bottom: 25px;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 15px;
-  border-radius: 8px;
+  margin-bottom: 24px;
+  background: var(--bg-card);
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-main);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-group:hover {
+  border-color: var(--mi-orange);
+  box-shadow: var(--shadow-md);
 }
 
 .settings-group h3 {
-  font-size: 14px;
-  margin-bottom: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 15px;
+  margin-bottom: 16px;
+  color: var(--text-primary);
   font-weight: 600;
+  border-left: 3px solid var(--mi-orange);
+  padding-left: 10px;
 }
 
 .setting-item {
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .setting-item:last-child {
@@ -219,37 +233,113 @@ h1 {
 
 .setting-item label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-size: 13px;
-  color: #ccc;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .settings-footer {
-  margin-top: 20px;
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-main);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
 }
 
-/* Element Plus 覆盖样式 */
+/* Element Plus 覆盖样式 - 小米风格 */
 :deep(.el-input__wrapper) {
-  background-color: rgba(0, 0, 0, 0.2);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  box-shadow: none !important;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-weight: 400;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: var(--mi-orange);
+  box-shadow: 0 2px 8px rgba(255, 105, 0, 0.1);
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: var(--mi-orange);
+  box-shadow: 0 0 0 3px rgba(255, 105, 0, 0.15);
 }
 
 :deep(.el-input__inner) {
-  color: #fff;
-  font-size: 13px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-weight: 400;
 }
 
 :deep(.el-divider) {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--border-main);
+  border-style: dashed;
   margin: 20px 0;
 }
 
 :deep(.el-checkbox) {
-  color: #ccc;
+  color: var(--text-secondary);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-weight: 500;
+}
+
+:deep(.el-checkbox__inner) {
+  background: var(--bg-card);
+  border: 1px solid var(--border-main);
+  border-radius: 4px;
+}
+
+:deep(.el-checkbox__inner:hover) {
+  border-color: var(--mi-orange);
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background: var(--mi-orange);
+  border-color: var(--mi-orange);
+}
+
+:deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: var(--mi-orange);
+  font-weight: 500;
+}
+
+:deep(.el-button) {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+
+:deep(.el-button--default) {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+
+:deep(.el-button--default:hover) {
+  border-color: var(--mi-orange) !important;
+  color: var(--mi-orange) !important;
+  background: rgba(255, 105, 0, 0.05) !important;
+}
+
+:deep(.el-button--primary) {
+  background: var(--mi-orange) !important;
+  border: 1px solid var(--mi-orange) !important;
+  color: #FFFFFF !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-button--primary:hover) {
+  background: var(--mi-orange-hover) !important;
+  border-color: var(--mi-orange-hover) !important;
+  box-shadow: 0 4px 12px rgba(255, 105, 0, 0.3) !important;
 }
 </style>
