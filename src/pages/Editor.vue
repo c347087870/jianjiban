@@ -2,7 +2,10 @@
   <div class="editor-page">
     <div class="drag-bar drag-region"></div>
     <div class="window-controls no-drag">
-      <button @click="handleCancel">✕</button>
+      <div class="close-btn-wrapper" @mouseenter="isHoverClose = true" @mouseleave="isHoverClose = false">
+        <div v-if="isDirty && !isHoverClose" class="unsaved-dot"></div>
+        <button v-else @click="handleCancel">✕</button>
+      </div>
     </div>
 
     <div class="editor-main">
@@ -139,18 +142,38 @@
     <div class="bottom-actions">
       <el-button 
         class="btn-save" 
-        @click="handleSave"
+        @click="handleSave(true)"
         type="primary"
         size="large"
       >
         完成
       </el-button>
     </div>
+
+    <el-dialog
+      v-model="showCloseConfirm"
+      title="提示"
+      width="300px"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      class="confirm-dialog"
+      append-to-body
+    >
+      <span>检测到未保存的内容，是否保存？</span>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="handleSaveAndClose">保存</el-button>
+          <el-button @click="handleDiscardAndClose">不保存</el-button>
+          <el-button @click="showCloseConfirm = false">取消</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Bell } from '@element-plus/icons-vue';
@@ -173,6 +196,31 @@ const reminderDay = ref(1); // 提醒日期（1-31）
 const repeatType = ref('none'); // 重复类型：none/daily/weekdays/weekly/monthly
 const isRemind = ref(false); // 是否开启提醒
 const isEdit = computed(() => !!todoId.value); // 是否为编辑模式
+
+// 脏检查相关
+const initialSnapshot = ref('');
+const showCloseConfirm = ref(false);
+const isHoverClose = ref(false); // 鼠标是否悬停在关闭按钮区域
+
+const getSnapshot = () => {
+  return JSON.stringify({
+    title: title.value,
+    content: content.value,
+    images: images.value,
+    type: type.value,
+    isRemind: isRemind.value,
+    reminderDateTime: reminderDateTime.value,
+    reminderTime: reminderTime.value,
+    reminderWeekday: reminderWeekday.value,
+    reminderDay: reminderDay.value,
+    repeatType: repeatType.value
+  });
+};
+
+const isDirty = computed(() => {
+  if (!initialSnapshot.value) return false;
+  return getSnapshot() !== initialSnapshot.value;
+});
 
 // 计算背景色 - 小米风格
 const editorBgColor = computed(() => {
@@ -212,6 +260,7 @@ const loadTodo = async (id) => {
       }
       
       repeatType.value = todo.repeat || 'none';
+      initialSnapshot.value = getSnapshot();
     }
   } catch (error) {
     ElMessage.error('加载待办事项失败');
@@ -230,7 +279,7 @@ const triggerImageUpload = () => {
   if (imageBtn) imageBtn.click();
 };
 
-const handleSave = async () => {
+const handleSave = async (closeAfterSave = true) => {
   let saveTitle = title.value.trim();
   
   if (!saveTitle) {
@@ -359,19 +408,51 @@ const handleSave = async () => {
       await window.api.createTodo(todoData);
       ElMessage.success('创建成功');
     }
-    setTimeout(() => {
-      window.api.closeEditor();
-    }, 500);
+    
+    // 更新快照
+    initialSnapshot.value = getSnapshot();
+    // 如果是从弹窗调用的保存，也需要关闭弹窗状态
+    showCloseConfirm.value = false;
+
+    if (closeAfterSave) {
+      setTimeout(() => {
+        window.api.closeEditor();
+      }, 500);
+    }
   } catch (error) {
     ElMessage.error('保存失败: ' + error.message);
   }
 };
 
 const handleCancel = () => {
+  if (isDirty.value) {
+    showCloseConfirm.value = true;
+  } else {
+    window.api.closeEditor();
+  }
+};
+
+const handleSaveAndClose = () => {
+  handleSave(true);
+};
+
+const handleDiscardAndClose = () => {
   window.api.closeEditor();
 };
 
+const handleKeydown = (e) => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    handleSave(false);
+  }
+};
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
+});
+
 onMounted(() => {
+  window.addEventListener('keydown', handleKeydown);
   const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
   const id = urlParams.get('id');
   const urlType = urlParams.get('type');
@@ -383,6 +464,9 @@ onMounted(() => {
   if (id) {
     todoId.value = id;
     loadTodo(id);
+  } else {
+    // 新建时初始化快照
+    initialSnapshot.value = getSnapshot();
   }
   
   // 监听来自主进程的 load-todo 事件
@@ -407,6 +491,7 @@ onMounted(() => {
         if (newType) {
             type.value = newType;
         }
+        initialSnapshot.value = getSnapshot();
       }
     });
   }
@@ -449,6 +534,30 @@ onMounted(() => {
   padding: 0 4px;
 }
 
+.close-btn-wrapper {
+  width: 36px;
+  height: 28px;
+  margin: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn-wrapper:hover {
+  background: rgba(255, 105, 0, 0.1);
+}
+
+.unsaved-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--mi-orange);
+  box-shadow: 0 0 4px rgba(255, 105, 0, 0.4);
+}
+
 .window-controls button {
   padding: 6px 10px;
   font-size: 16px;
@@ -463,14 +572,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 28px;
-  margin: 2px;
+  width: 100%;
+  height: 100%;
+  margin: 0;
 }
 
 .window-controls button:hover {
   color: var(--mi-orange);
-  background: rgba(255, 105, 0, 0.1);
 }
 
 .editor-main {
@@ -655,5 +763,11 @@ onMounted(() => {
 
 .time-picker {
   flex: 1;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>

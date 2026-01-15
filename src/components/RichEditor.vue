@@ -118,6 +118,7 @@ onMounted(() => {
 
 :deep(.ql-editor:focus) {
   background: var(--bg-card) !important;
+  box-shadow: none !important;
 }
 
 :deep(.ql-editor.ql-blank::before) {
