@@ -5,6 +5,7 @@
 </template>
 
 <script setup>
+// 组件名称配置
 defineOptions({
   name: 'App'
 });
@@ -17,6 +18,6 @@ defineOptions({
   overflow: hidden;
 }
 ::-webkit-scrollbar {
-		display: none;
-	}
+  display: none;
+}
 </style>

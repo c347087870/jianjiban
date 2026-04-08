@@ -1,7 +1,6 @@
 <template>
   <div class="rich-editor-wrapper">
     <div ref="editorContainer" class="editor-container"></div>
-    <!-- Toolbar container will be moved here by Quill or we position it absolutely -->
   </div>
 </template>
 
@@ -14,6 +13,7 @@ defineOptions({
   name: 'RichEditor'
 });
 
+// 编辑器内容，支持 v-model 双向绑定
 const props = defineProps({
   modelValue: {
     type: String,
@@ -21,45 +21,55 @@ const props = defineProps({
   }
 });
 
+// 定义事件
 const emit = defineEmits(['update:modelValue', 'image-uploaded']);
 
+// 编辑器容器 DOM 引用
 const editorContainer = ref(null);
+
+// Quill 编辑器实例
 let quill = null;
 
+/**
+ * 初始化 Quill 编辑器
+ * 创建编辑器实例，设置初始内容，绑定内容变化事件
+ */
 const initQuill = () => {
   quill = new Quill(editorContainer.value, {
     theme: 'snow',
     placeholder: '键入任何要记住的内容...',
     modules: {
-      toolbar: false // 禁用工具栏
+      toolbar: false
     }
   });
-
-  // Set initial content
+  // 设置初始内容
   if (props.modelValue) {
     quill.root.innerHTML = props.modelValue;
   }
-
-  // Listen for changes
+  // 监听内容变化，触发更新事件
   quill.on('text-change', () => {
     const html = quill.root.innerHTML;
     emit('update:modelValue', html);
   });
 };
 
+/**
+ * 监听外部内容变化
+ * 当父组件传入的内容变化时，更新编辑器内容
+ */
 watch(() => props.modelValue, (newValue) => {
   if (quill && quill.root.innerHTML !== newValue) {
     quill.root.innerHTML = newValue;
   }
 });
 
+// 组件挂载时初始化编辑器
 onMounted(() => {
   initQuill();
 });
 </script>
 
 <style scoped>
-/* RichEditor - 小米风格 */
 .rich-editor-wrapper {
   display: flex;
   flex-direction: column;
@@ -67,7 +77,6 @@ onMounted(() => {
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
-
 .editor-container {
   flex: 1;
   overflow-y: hidden;
@@ -75,12 +84,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
 }
-
-:deep(.ql-toolbar) {
+::v-deep(.ql-toolbar) {
   display: none !important;
 }
-
-:deep(.ql-container) {
+::v-deep(.ql-container) {
   border: none !important;
   flex: 1;
   overflow-y: auto;
@@ -93,18 +100,15 @@ onMounted(() => {
   font-weight: 400 !important;
   box-shadow: var(--shadow-sm) !important;
 }
-
-:deep(.ql-container:hover) {
+::v-deep(.ql-container:hover) {
   border-color: var(--mi-orange) !important;
   box-shadow: var(--shadow-md) !important;
 }
-
-:deep(.ql-container:focus-within) {
+::v-deep(.ql-container:focus-within) {
   border-color: var(--mi-orange) !important;
   box-shadow: 0 0 0 3px rgba(255, 105, 0, 0.15) !important;
 }
-
-:deep(.ql-editor) {
+::v-deep(.ql-editor) {
   padding: 24px;
   min-height: 100%;
   line-height: 1.6;
@@ -115,46 +119,35 @@ onMounted(() => {
   letter-spacing: 0.2px;
   font-weight: 400;
 }
-
-:deep(.ql-editor:focus) {
+::v-deep(.ql-editor:focus) {
   background: var(--bg-card) !important;
   box-shadow: none !important;
 }
-
-:deep(.ql-editor.ql-blank::before) {
+::v-deep(.ql-editor.ql-blank::before) {
   color: var(--text-tertiary);
   font-style: normal;
   opacity: 0.8;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
   letter-spacing: 0.3px;
 }
-
-/* 自定义光标样式 - 小米橙 */
-:deep(.ql-editor) {
+::v-deep(.ql-editor) {
   caret-color: var(--mi-orange);
 }
-
-/* 选中文本样式 - 小米橙高亮 */
-:deep(.ql-editor ::selection) {
+::v-deep(.ql-editor ::selection) {
   background: rgba(255, 105, 0, 0.2) !important;
   color: var(--text-primary) !important;
 }
-
-/* 滚动条 - 小米风格 */
-:deep(.ql-container::-webkit-scrollbar) {
+::v-deep(.ql-container::-webkit-scrollbar) {
   width: 6px;
 }
-
-:deep(.ql-container::-webkit-scrollbar-track) {
+::v-deep(.ql-container::-webkit-scrollbar-track) {
   background: transparent;
 }
-
-:deep(.ql-container::-webkit-scrollbar-thumb) {
+::v-deep(.ql-container::-webkit-scrollbar-thumb) {
   background: #D8D8D8;
   border-radius: 3px;
 }
-
-:deep(.ql-container::-webkit-scrollbar-thumb:hover) {
+::v-deep(.ql-container::-webkit-scrollbar-thumb:hover) {
   background: var(--mi-orange);
 }
 </style>

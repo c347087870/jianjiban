@@ -4,10 +4,15 @@ const path = require('path');
 
 /**
  * 注册快捷键相关的 IPC 处理器
+ * @param {Object} ipcMain - Electron IPC 主进程对象
+ * @param {String} settingsFilePath - 设置文件路径
  */
 function registerShortcutHandlers(ipcMain, settingsFilePath) {
 
-    // 获取设置
+    /**
+     * 获取设置
+     * @returns {Object} 设置对象
+     */
     ipcMain.handle('settings:get', async () => {
         try {
             const data = await fs.readFile(settingsFilePath, 'utf-8');
@@ -17,7 +22,11 @@ function registerShortcutHandlers(ipcMain, settingsFilePath) {
         }
     });
 
-    // 更新设置
+    /**
+     * 更新设置
+     * @param {Object} newSettings - 新设置对象
+     * @returns {Object} 更新后的设置对象
+     */
     ipcMain.handle('settings:update', async (event, newSettings) => {
         try {
             const data = await fs.readFile(settingsFilePath, 'utf-8');
@@ -28,11 +37,9 @@ function registerShortcutHandlers(ipcMain, settingsFilePath) {
                 ...newSettings
             };
 
-            // 如果快捷键有更新,需要重新注册
+            // 如果快捷键有更新，触发重新注册
             if (newSettings.shortcuts) {
-                // 触发主进程重新注册快捷键
                 const { ipcMain } = require('electron');
-                // 使用 emit 触发主进程的重新注册
                 process.nextTick(() => {
                     ipcMain.emit('shortcuts:reregister');
                 });
@@ -50,7 +57,7 @@ function registerShortcutHandlers(ipcMain, settingsFilePath) {
                     // Windows 使用启动文件夹快捷方式
                     if (process.platform === 'win32') {
                         if (!app.isPackaged) {
-                            // Skip auto-start in dev mode
+                            // 开发模式跳过
                         } else {
                             const startupDir = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup');
                             const linkPath = path.join(startupDir, '简记办.lnk');
@@ -66,13 +73,13 @@ function registerShortcutHandlers(ipcMain, settingsFilePath) {
                                     const fs = require('fs');
                                     if (fs.existsSync(linkPath)) fs.unlinkSync(linkPath);
                                 } catch (e) {
-                                    // Failed to remove shortcut
+                                    // 删除快捷方式失败
                                 }
                             }
                         }
                     }
                 } catch (e) {
-                    // Auto-start setup failed
+                    // 开机自启设置失败
                 }
             }
 

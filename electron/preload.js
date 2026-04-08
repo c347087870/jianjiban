@@ -31,6 +31,11 @@ contextBridge.exposeInMainWorld('api', {
     maximizeWindow: () => ipcRenderer.send('window:maximize'),
     closeWindow: () => ipcRenderer.send('window:close'),
 
+    // 提示窗口鼠标事件
+    tooltipMouseEnter: () => ipcRenderer.send('tooltip:mouseenter'),
+    tooltipMouseLeave: () => ipcRenderer.send('tooltip:mouseleave'),
+    tooltipTodoClick: (todoId) => ipcRenderer.send('tooltip:todoClick', todoId),
+
     // 事件监听
     onTodoChanged: (callback) => {
         ipcRenderer.on('todo:changed', (event, todos) => callback(todos));
@@ -43,6 +48,9 @@ contextBridge.exposeInMainWorld('api', {
     },
     onLoadTodo: (callback) => {
         ipcRenderer.on('load-todo', (event, todoId, type) => callback(todoId, type));
+    },
+    onTooltipUpdate: (callback) => {
+        ipcRenderer.on('tooltip:update', (event, todos) => callback(todos));
     },
 
     // 移除事件监听
