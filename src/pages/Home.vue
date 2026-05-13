@@ -234,14 +234,30 @@ const closeWindow = () => window.api.closeWindow();
 const openSettings = () => window.api.openSettings();
 
 /**
- * 去除 HTML 标签
- * @param {String} html - HTML 字符串
+ * 从内容中提取纯文本预览
+ * 兼容 HTML（旧数据）和 Markdown（新数据）两种格式
+ * @param {String} str - HTML 或 Markdown 字符串
  * @returns {String} 纯文本内容
  */
-const stripHtml = (html) => {
-  const tmp = document.createElement('DIV');
-  tmp.innerHTML = html;
-  return tmp.textContent || tmp.innerText || '';
+const stripHtml = (str) => {
+  if (!str) return '';
+  if (str.startsWith('<')) {
+    const tmp = document.createElement('DIV');
+    tmp.innerHTML = str;
+    return tmp.textContent || tmp.innerText || '';
+  }
+  return str
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]+`/g, '')
+    .replace(/!\[.*?\]\(.*?\)/g, '')
+    .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')
+    .replace(/#{1,6}\s+/g, '')
+    .replace(/[*_~]+/g, '')
+    .replace(/>\s+/g, '')
+    .replace(/[-*+]\s+/g, '')
+    .replace(/\d+\.\s+/g, '')
+    .replace(/\n{2,}/g, ' ')
+    .trim();
 };
 
 /**

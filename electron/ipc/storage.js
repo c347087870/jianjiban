@@ -35,7 +35,7 @@ function registerStorageHandlers(ipcMain, imagesDir) {
 
             return {
                 path: `images/${filename}`,
-                url: `file://${filepath}`
+                url: `local-file:///${filepath.replace(/\\/g, '/')}`
             };
         } catch (error) {
             throw error;
@@ -67,7 +67,7 @@ function registerStorageHandlers(ipcMain, imagesDir) {
     ipcMain.handle('image:getPath', async (event, filename) => {
         try {
             const filepath = path.join(imagesDir, filename);
-            return `file://${filepath}`;
+            return `local-file:///${filepath.replace(/\\/g, '/')}`;
         } catch (error) {
             throw error;
         }

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, globalShortcut, Notification, Tray, Menu, nativeImage, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, Notification, Tray, Menu, nativeImage, dialog, shell, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const moment = require('moment');
@@ -741,8 +741,23 @@ function showReminder(todo) {
   notification.show();
 }
 
+// 声明 local-file 为特权协议（必须在 app.whenReady 之前调用）
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'local-file', privileges: { bypassCSP: true, stream: true, supportFetchAPI: true } }
+]);
+
 // 应用启动入口
 app.whenReady().then(async () => {
+  // 注册自定义协议，用于在渲染进程中加载本地图片
+  protocol.registerFileProtocol('local-file', (request, callback) => {
+    let filePath = request.url.replace('local-file://', '');
+    // 处理三斜杠格式 local-file:///D:/path -> D:/path
+    if (filePath.startsWith('/') && filePath.length > 2 && filePath.charAt(2) === ':') {
+      filePath = filePath.substring(1);
+    }
+    callback({ path: decodeURIComponent(filePath) });
+  });
+
   await initializeDataDirectory();
   createMainWindow();
   createTray();

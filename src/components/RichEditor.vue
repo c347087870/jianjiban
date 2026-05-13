@@ -1,153 +1,186 @@
 <template>
-  <div class="rich-editor-wrapper">
-    <div ref="editorContainer" class="editor-container"></div>
+  <div class="markdown-editor-wrapper">
+    <MdEditor
+      v-if="mode === 'edit'"
+      v-model="innerContent"
+      language="zh-CN"
+      :preview="false"
+      :toolbars="toolbars"
+      placeholder="键入任何要记住的内容..."
+      :on-upload-img="handleUploadImg"
+      @onSave="handleEditorSave"
+    />
+    <MdPreview
+      v-else
+      :modelValue="innerContent"
+      language="zh-CN"
+      class="md-preview-area"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
-import Quill from 'quill';
-import 'quill/dist/quill.snow.css';
+import { ref, watch } from 'vue';
+import { MdEditor, MdPreview } from 'md-editor-v3';
+import 'md-editor-v3/lib/style.css';
 
-defineOptions({
-  name: 'RichEditor'
-});
+defineOptions({ name: 'RichEditor' });
 
-// 编辑器内容，支持 v-model 双向绑定
 const props = defineProps({
-  modelValue: {
-    type: String,
-    default: ''
+  modelValue: { type: String, default: '' },
+  mode: { type: String, default: 'edit' }
+});
+
+const emit = defineEmits(['update:modelValue', 'image-uploaded', 'save']);
+
+const innerContent = ref(props.modelValue);
+
+const toolbars = [
+  'bold', 'italic', 'strikeThrough', '-',
+  'title', 'list', 'orderedList', 'taskList', '-',
+  'code', 'quote', 'link', 'image', '-',
+  'table', 'mermaid', '-',
+  'revoke', 'next', '=', 'preview'
+];
+
+watch(() => props.modelValue, (val) => {
+  if (val !== innerContent.value) {
+    innerContent.value = val;
   }
 });
 
-// 定义事件
-const emit = defineEmits(['update:modelValue', 'image-uploaded']);
+watch(innerContent, (val) => {
+  emit('update:modelValue', val);
+});
 
-// 编辑器容器 DOM 引用
-const editorContainer = ref(null);
-
-// Quill 编辑器实例
-let quill = null;
-
-/**
- * 初始化 Quill 编辑器
- * 创建编辑器实例，设置初始内容，绑定内容变化事件
- */
-const initQuill = () => {
-  quill = new Quill(editorContainer.value, {
-    theme: 'snow',
-    placeholder: '键入任何要记住的内容...',
-    modules: {
-      toolbar: false
-    }
-  });
-  // 设置初始内容
-  if (props.modelValue) {
-    quill.root.innerHTML = props.modelValue;
-  }
-  // 监听内容变化，触发更新事件
-  quill.on('text-change', () => {
-    const html = quill.root.innerHTML;
-    emit('update:modelValue', html);
-  });
+const handleUploadImg = async (files, callback) => {
+  const results = await Promise.all(
+    files.map(async (file) => {
+      const reader = new FileReader();
+      const base64 = await new Promise((resolve) => {
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+      const result = await window.api.saveImage(base64);
+      emit('image-uploaded', result.path);
+      return { url: result.url, alt: '', title: '' };
+    })
+  );
+  callback(results);
 };
 
-/**
- * 监听外部内容变化
- * 当父组件传入的内容变化时，更新编辑器内容
- */
-watch(() => props.modelValue, (newValue) => {
-  if (quill && quill.root.innerHTML !== newValue) {
-    quill.root.innerHTML = newValue;
-  }
-});
-
-// 组件挂载时初始化编辑器
-onMounted(() => {
-  initQuill();
-});
+const handleEditorSave = (markdown) => {
+  emit('save', markdown);
+};
 </script>
 
 <style scoped>
-.rich-editor-wrapper {
+.markdown-editor-wrapper {
   display: flex;
   flex-direction: column;
   height: 100%;
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
-.editor-container {
-  flex: 1;
-  overflow-y: hidden;
-  border: none !important;
-  display: flex;
-  flex-direction: column;
-}
-::v-deep(.ql-toolbar) {
-  display: none !important;
-}
-::v-deep(.ql-container) {
-  border: none !important;
-  flex: 1;
-  overflow-y: auto;
-  font-size: 16px;
-  position: relative;
-  background: var(--bg-card) !important;
-  border-radius: var(--radius-lg) !important;
+
+.markdown-editor-wrapper ::v-deep(.md-editor) {
   border: 1px solid var(--border-main) !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
-  font-weight: 400 !important;
+  border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow-sm) !important;
+  height: 100%;
 }
-::v-deep(.ql-container:hover) {
+
+.markdown-editor-wrapper ::v-deep(.md-editor:hover) {
   border-color: var(--mi-orange) !important;
   box-shadow: var(--shadow-md) !important;
 }
-::v-deep(.ql-container:focus-within) {
+
+.markdown-editor-wrapper ::v-deep(.md-editor:focus-within) {
   border-color: var(--mi-orange) !important;
   box-shadow: 0 0 0 3px rgba(255, 105, 0, 0.15) !important;
 }
-::v-deep(.ql-editor) {
-  padding: 24px;
-  min-height: 100%;
-  line-height: 1.6;
-  color: var(--text-primary);
-  caret-color: var(--mi-orange);
-  overflow-y: visible;
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
-  letter-spacing: 0.2px;
-  font-weight: 400;
+
+.markdown-editor-wrapper ::v-deep(.md-editor-toolbar-wrapper) {
+  border-bottom: 1px solid var(--border-main) !important;
 }
-::v-deep(.ql-editor:focus) {
-  background: var(--bg-card) !important;
-  box-shadow: none !important;
+
+.markdown-editor-wrapper ::v-deep(.md-editor-content) {
+  flex: 1;
 }
-::v-deep(.ql-editor.ql-blank::before) {
+
+.markdown-editor-wrapper ::v-deep(.md-editor-input) {
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+  padding: 20px !important;
+  color: var(--text-primary) !important;
+  caret-color: var(--mi-orange) !important;
+}
+
+.markdown-editor-wrapper ::v-deep(.md-editor-input::placeholder) {
   color: var(--text-tertiary);
-  font-style: normal;
   opacity: 0.8;
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important;
-  letter-spacing: 0.3px;
 }
-::v-deep(.ql-editor) {
-  caret-color: var(--mi-orange);
+
+.md-preview-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
-::v-deep(.ql-editor ::selection) {
-  background: rgba(255, 105, 0, 0.2) !important;
+
+.md-preview-area ::v-deep(.md-preview) {
+  font-size: 15px !important;
+  line-height: 1.7 !important;
   color: var(--text-primary) !important;
 }
-::v-deep(.ql-container::-webkit-scrollbar) {
-  width: 6px;
+
+.md-preview-area ::v-deep(.md-preview h1),
+.md-preview-area ::v-deep(.md-preview h2),
+.md-preview-area ::v-deep(.md-preview h3),
+.md-preview-area ::v-deep(.md-preview h4) {
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-main) !important;
 }
-::v-deep(.ql-container::-webkit-scrollbar-track) {
-  background: transparent;
+
+.md-preview-area ::v-deep(.md-preview code) {
+  background: var(--bg-page) !important;
+  color: var(--mi-orange) !important;
 }
-::v-deep(.ql-container::-webkit-scrollbar-thumb) {
-  background: #D8D8D8;
-  border-radius: 3px;
+
+.md-preview-area ::v-deep(.md-preview pre code) {
+  background: var(--bg-page) !important;
+  color: var(--text-primary) !important;
 }
-::v-deep(.ql-container::-webkit-scrollbar-thumb:hover) {
-  background: var(--mi-orange);
+
+.md-preview-area ::v-deep(.md-preview blockquote) {
+  border-left-color: var(--mi-orange) !important;
+  color: var(--text-secondary) !important;
+}
+
+.md-preview-area ::v-deep(.md-preview img) {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+
+.md-preview-area ::v-deep(.md-preview a) {
+  color: var(--mi-orange) !important;
+}
+
+.md-preview-area ::v-deep(.md-preview table) {
+  border-color: var(--border-main) !important;
+}
+
+.md-preview-area ::v-deep(.md-preview table th) {
+  background: var(--bg-page) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+
+.md-preview-area ::v-deep(.md-preview table td) {
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
 }
 </style>

@@ -8,9 +8,34 @@
       </div>
     </div>
     <div class="editor-main">
-      <el-input v-model="title" placeholder="标题 (可选)" class="title-input" clearable />
-      <RichEditor v-model="content" @image-uploaded="handleImageUploaded" class="rich-editor" />
-      <div class="reminder-section" v-if="type === 'todo'">
+      <div class="title-row">
+        <el-input v-model="title" placeholder="标题 (可选)" class="title-input" clearable :disabled="viewMode === 'show'" />
+        <div class="mode-toggle">
+          <el-button
+            v-if="viewMode === 'show'"
+            class="btn-toggle"
+            @click="switchToEdit"
+            size="default"
+          >
+            <el-icon><Edit /></el-icon>编辑
+          </el-button>
+          <el-button
+            v-else
+            class="btn-toggle"
+            @click="switchToShow"
+            size="default"
+          >
+            <el-icon><View /></el-icon>预览
+          </el-button>
+        </div>
+      </div>
+      <RichEditor
+        v-model="content"
+        :mode="viewMode === 'show' ? 'preview' : 'edit'"
+        @image-uploaded="handleImageUploaded"
+        class="rich-editor"
+      />
+      <div class="reminder-section" v-if="type === 'todo' && viewMode === 'edit'">
         <div class="reminder-header">
           <div class="reminder-switch-row">
             <label class="switch-label"><el-icon><Bell /></el-icon>设置提醒</label>
@@ -21,14 +46,11 @@
           <div class="reminder-row-combined">
             <div class="reminder-item">
               <label>提醒时间</label>
-              <!-- 一次性提醒：日期时间选择器 -->
               <el-date-picker v-if="repeatType === 'none'" v-model="reminderDateTime" type="datetime"
                 placeholder="选择日期时间" :disabled-date="disabledDate" format="YYYY-MM-DD HH:mm"
                 value-format="YYYY-MM-DDTHH:mm" class="datetime-picker" size="default" :teleported="false" />
-              <!-- 每天/工作日提醒：时间选择器 -->
               <el-time-picker v-if="repeatType === 'daily' || repeatType === 'weekdays'" v-model="reminderTime"
                 placeholder="选择时间" format="HH:mm" value-format="HH:mm" class="time-picker" size="default" :teleported="false" />
-              <!-- 每周提醒：周几选择 + 时间选择 -->
               <div v-if="repeatType === 'weekly'" class="weekly-picker">
                 <el-select v-model="reminderWeekday" placeholder="选择周几" class="weekday-select" size="default" :teleported="false">
                   <el-option label="周一" :value="1" /><el-option label="周二" :value="2" />
@@ -39,7 +61,6 @@
                 <el-time-picker v-model="reminderTime" placeholder="选择时间" format="HH:mm"
                   value-format="HH:mm" class="time-picker" size="default" :teleported="false" />
               </div>
-              <!-- 每月提醒：日期选择 + 时间选择 -->
               <div v-if="repeatType === 'monthly'" class="monthly-picker">
                 <el-select v-model="reminderDay" placeholder="选择日期" class="day-select" size="default" :teleported="false">
                   <el-option v-for="day in 31" :key="day" :label="day + '日'" :value="day" />
@@ -82,19 +103,49 @@
 
 <script setup>
 import { ref, onMounted, computed, onUnmounted } from 'vue';
-import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { Bell } from '@element-plus/icons-vue';
+import { Bell, Edit, View } from '@element-plus/icons-vue';
 import RichEditor from '../components/RichEditor.vue';
 import moment from 'moment';
+import TurndownService from 'turndown';
 
 defineOptions({ name: 'Editor' });
+
+// Turndown 实例，用于 HTML → Markdown 转换
+const turndownService = new TurndownService({
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced'
+});
+
+/**
+ * 修正图片 URL 协议为 local-file:/// 格式
+ * 兼容旧数据中的 file:// 和 local-file:// 双斜杠格式
+ * @param {String} content - 内容字符串
+ * @returns {String} 修正后的内容
+ */
+const fixImageUrl = (content) => {
+  if (!content) return '';
+  return content
+    .replace(/file:\/\/([A-Za-z]:)/g, 'local-file:///$1')
+    .replace(/local-file:\/\/([A-Za-z]:)/g, 'local-file:///$1');
+};
+
+/**
+ * 将 HTML 内容转换为 Markdown
+ * @param {String} html - HTML 字符串
+ * @returns {String} Markdown 字符串
+ */
+const htmlToMarkdown = (html) => {
+  if (!html) return '';
+  if (!html.startsWith('<')) return fixImageUrl(html);
+  return fixImageUrl(turndownService.turndown(html));
+};
 
 // 当前编辑的待办ID，null 表示新建模式
 const todoId = ref(null);
 // 标题
 const title = ref('');
-// 内容（富文本）
+// 内容（Markdown 格式）
 const content = ref('');
 // 图片路径列表
 const images = ref([]);
@@ -112,8 +163,10 @@ const reminderDay = ref(1);
 const repeatType = ref('none');
 // 是否开启提醒
 const isRemind = ref(false);
+// 当前视图模式（show=展示/preview，edit=编辑）
+const viewMode = ref('edit');
 
-// 是否为编辑模式
+// 是否为编辑模式（有 ID 即为编辑）
 const isEdit = computed(() => !!todoId.value);
 
 // 初始数据快照（用于脏检查）
@@ -141,10 +194,19 @@ const isDirty = computed(() => {
   return getSnapshot() !== initialSnapshot.value;
 });
 
-// 编辑器背景色（根据类型变化）
-const editorBgColor = computed(() => {
-  return type.value === 'todo' ? 'linear-gradient(135deg, rgba(255, 105, 0, 0.03) 0%, rgba(255, 185, 0, 0.03) 100%)' : 'linear-gradient(135deg, rgba(46, 125, 255, 0.03) 0%, rgba(0, 184, 148, 0.03) 100%)';
-});
+/**
+ * 切换到编辑模式
+ */
+const switchToEdit = () => {
+  viewMode.value = 'edit';
+};
+
+/**
+ * 切换到展示模式
+ */
+const switchToShow = () => {
+  viewMode.value = 'show';
+};
 
 /**
  * 禁用过去的日期
@@ -164,7 +226,8 @@ const loadTodo = async (id) => {
     const todo = await window.api.getTodoById(id);
     if (todo) {
       title.value = todo.title;
-      content.value = todo.content;
+      // 自动将旧 HTML 数据转换为 Markdown
+      content.value = htmlToMarkdown(todo.content || '');
       images.value = todo.images || [];
       type.value = todo.type || 'note';
       // 解析提醒时间
@@ -186,6 +249,8 @@ const loadTodo = async (id) => {
         isRemind.value = false;
       }
       repeatType.value = todo.repeat || 'none';
+      // 有 ID 时默认展示模式
+      viewMode.value = 'show';
       initialSnapshot.value = getSnapshot();
     }
   } catch (error) {
@@ -203,10 +268,25 @@ const handleImageUploaded = (imagePath) => {
   }
 };
 
-// 触发图片上传（保留备用）
-const triggerImageUpload = () => {
-  const imageBtn = document.querySelector('.ql-image');
-  if (imageBtn) imageBtn.click();
+/**
+ * 从 Markdown 内容提取纯文本
+ * @param {String} md - Markdown 字符串
+ * @returns {String} 纯文本内容
+ */
+const stripMarkdown = (md) => {
+  if (!md) return '';
+  return md
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]+`/g, '')
+    .replace(/!\[.*?\]\(.*?\)/g, '')
+    .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')
+    .replace(/#{1,6}\s+/g, '')
+    .replace(/[*_~]+/g, '')
+    .replace(/>\s+/g, '')
+    .replace(/[-*+]\s+/g, '')
+    .replace(/\d+\.\s+/g, '')
+    .replace(/\n{2,}/g, ' ')
+    .trim();
 };
 
 /**
@@ -217,9 +297,7 @@ const handleSave = async (closeAfterSave = true) => {
   // 自动生成标题
   let saveTitle = title.value.trim();
   if (!saveTitle) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = content.value;
-    const text = tempDiv.textContent || tempDiv.innerText || '';
+    const text = stripMarkdown(content.value);
     saveTitle = text.slice(0, 20) || '未命名笔记';
   }
   // 计算提醒时间
@@ -247,7 +325,6 @@ const handleSave = async (closeAfterSave = true) => {
       const [hours, minutes] = reminderTime.value.split(':').map(Number);
       let nextReminder = moment().hours(hours).minutes(minutes).seconds(0);
       if (nextReminder.isSameOrBefore(now)) { nextReminder.add(1, 'day'); }
-      // 跳过周末
       while (nextReminder.day() === 0 || nextReminder.day() === 6) { nextReminder.add(1, 'day'); }
       remindAt = nextReminder.format('YYYY-MM-DD') + 'T' + reminderTime.value + ':00';
     }
@@ -269,7 +346,6 @@ const handleSave = async (closeAfterSave = true) => {
       const [hours, minutes] = reminderTime.value.split(':').map(Number);
       let nextReminder = moment().date(reminderDay.value).hours(hours).minutes(minutes).seconds(0);
       if (nextReminder.isSameOrBefore(now)) { nextReminder.add(1, 'month'); }
-      // 处理月末日期不存在的情况
       if (nextReminder.date() !== reminderDay.value) {
         nextReminder.date(nextReminder.daysInMonth());
         if (nextReminder.isSameOrBefore(now)) {
@@ -310,7 +386,6 @@ const handleSave = async (closeAfterSave = true) => {
       await window.api.createTodo(todoData);
       ElMessage.success('创建成功');
     }
-    // 更新快照
     initialSnapshot.value = getSnapshot();
     showCloseConfirm.value = false;
     if (closeAfterSave) {
@@ -341,7 +416,6 @@ const handleDiscardAndClose = () => { window.api.closeEditor(); };
  * @param {KeyboardEvent} e - 键盘事件
  */
 const handleKeydown = (e) => {
-  // 新增模式下禁用 Ctrl+S 保存功能
   if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
     e.preventDefault();
     if (isEdit.value) { handleSave(false); }
@@ -356,7 +430,6 @@ onUnmounted(() => {
 // 组件挂载时初始化
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown);
-  // 从 URL 参数获取 ID 和类型
   const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
   const id = urlParams.get('id');
   const urlType = urlParams.get('type');
@@ -365,13 +438,13 @@ onMounted(() => {
     todoId.value = id;
     loadTodo(id);
   } else {
-    // 新建时初始化快照
+    // 新建时默认编辑模式
+    viewMode.value = 'edit';
     initialSnapshot.value = getSnapshot();
   }
   // 监听来自主进程的 load-todo 事件
   if (window.api && window.api.onLoadTodo) {
     window.api.onLoadTodo((id, newType) => {
-      // 重置数据
       title.value = ''; content.value = ''; images.value = [];
       reminderDateTime.value = ''; reminderTime.value = '';
       reminderWeekday.value = 1; reminderDay.value = 1;
@@ -382,6 +455,7 @@ onMounted(() => {
       } else {
         todoId.value = null;
         if (newType) { type.value = newType; }
+        viewMode.value = 'edit';
         initialSnapshot.value = getSnapshot();
       }
     });
@@ -399,13 +473,15 @@ onMounted(() => {
 .window-controls button { padding: 6px 10px; font-size: 16px; color: var(--text-secondary); background: transparent; border: none; border-radius: 4px; transition: all 0.2s ease; font-family: inherit; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; margin: 0; }
 .window-controls button:hover { color: var(--mi-orange); }
 .editor-main { flex: 1; display: flex; flex-direction: column; padding-top: 32px; overflow: hidden; background: var(--bg-page); }
-.title-input { padding: 16px 20px; font-size: 20px; font-weight: 600; flex-shrink: 0; background: var(--bg-card) !important; border: none !important; border-bottom: 1px solid var(--border-main) !important; color: var(--text-primary) !important; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif; border-radius: 0 !important; }
+.title-row { display: flex; align-items: center; flex-shrink: 0; border-bottom: 1px solid var(--border-main); background: var(--bg-card); }
+.title-input { flex: 1; padding: 16px 20px; font-size: 20px; font-weight: 600; background: var(--bg-card) !important; border: none !important; color: var(--text-primary) !important; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif; border-radius: 0 !important; }
 .title-input::placeholder { color: var(--text-tertiary); font-weight: 400; opacity: 0.8; }
 .title-input:focus { background: var(--bg-card) !important; border-bottom-color: var(--mi-orange) !important; box-shadow: 0 2px 8px rgba(255, 105, 0, 0.1) !important; }
+.mode-toggle { padding-right: 16px; flex-shrink: 0; }
+.btn-toggle { background: var(--bg-card) !important; border: 1px solid var(--border-main) !important; border-radius: var(--radius-md) !important; color: var(--text-secondary) !important; font-weight: 500 !important; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif !important; transition: all 0.2s ease !important; }
+.btn-toggle:hover { border-color: var(--mi-orange) !important; color: var(--mi-orange) !important; background: rgba(255, 105, 0, 0.05) !important; }
 .rich-editor { flex: 1; overflow: hidden; padding: 16px 20px; }
 .bottom-actions { height: 56px; display: flex; justify-content: flex-end; align-items: center; padding: 0 20px; flex-shrink: 0; z-index: 100; background: var(--bg-card); border-top: 1px solid var(--border-main); font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif; gap: 12px; }
-.btn-action { background: var(--bg-card); border: 1px solid var(--border-main); border-radius: var(--radius-md); padding: 8px 16px; display: flex; align-items: center; gap: 6px; font-size: 14px; transition: all 0.2s ease; cursor: pointer; color: var(--text-secondary); font-weight: 500; }
-.btn-action:hover { border-color: var(--mi-orange); color: var(--mi-orange); background: rgba(255, 105, 0, 0.05); transform: translateY(-1px); }
 .btn-save { background: var(--mi-orange); border: 1px solid var(--mi-orange); color: #FFFFFF; font-weight: 600; border-radius: var(--radius-lg); padding: 10px 32px; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif; letter-spacing: 0.5px; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
 .btn-save:hover { background: var(--mi-orange-hover); border-color: var(--mi-orange-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .btn-save:active { transform: translateY(0); }
@@ -420,7 +496,4 @@ onMounted(() => {
 .reminder-item label { font-size: 12px; color: var(--text-tertiary); font-weight: 500; }
 .datetime-picker, .repeat-select, .time-picker, .weekday-select, .day-select { width: 100%; }
 .weekly-picker, .monthly-picker { display: flex; gap: 8px; }
-.weekday-select, .day-select { flex: 1; min-width: 80px; }
-.time-picker { flex: 1; }
-.dialog-footer { display: flex; justify-content: flex-end; gap: 10px; }
 </style>
